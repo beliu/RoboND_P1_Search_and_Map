@@ -1,8 +1,13 @@
 ## Project: Search and Sample Return
 ---
+[//]: # (Image References)
+
+[image1]: ./misc/rover_image.jpg
+[image2]: ./calibration_images/example_grid1.jpg
+[image3]: ./calibration_images/example_rock1.jpg 
 
 
-**The goals / steps of this project are the following:**  
+### The goals / steps of this project are the following:
 **Training / Calibration** 
 * Download the rover simulator and record training images on which I can test the `process_image()` function.
 * Add functions to detect obstacles and rocks.
@@ -28,13 +33,15 @@
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/916/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.
+### Notebook Analysis
+#### 1. I will cover how I filled in the functions that are present in the Notebook
+** Color Threshold **
+Within `color_thresh()`, I added an extra parameter called `detect_mode` in line 3 of that cell. I use this parameter to choose whether I am interested in detecting obstacles, navigable terrain, or rocks. For example, if I wanted to detect obstacles, I would set `detect_mode = 'obstacle'`. 
+Lines 9 through 20 will choose one of three image channels to apply threshold values to based on `detect_mode`. For obstacles and terrain, the threshold values for each image channel is supplied by the user. For rocks, I plotted an interactive image of a rock in the notebook and found a range of values that the yellow rock can take on across all three channels. I then hard-coded those values as threshold values into `color_thresh()` for `detect_mode = 'rock'` only.
+Line 22 then takes the pixels that meeth the threshold values and sets them to 1 in the output threshold image.
 
 
-[//]: # (Image References)
 
-[image1]: ./misc/rover_image.jpg
-[image2]: ./calibration_images/example_grid1.jpg
-[image3]: ./calibration_images/example_rock1.jpg 
 
 
 ---
@@ -46,7 +53,7 @@ You're reading it!
 
 ### Notebook Analysis
 #### 1. Run the functions provided in the notebook on test images (first with the test data provided, next on data you have recorded). Add/modify functions to allow for color selection of obstacles and rock samples.
-Here is an example of how to include an image in your writeup.
+
 
 ![alt text][image1]
 
