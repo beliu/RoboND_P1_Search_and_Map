@@ -14,9 +14,21 @@
 * Use `moviepy` to create a video that shows the output of `process_image()`.
 
 **Autonomous Navigation / Mapping**
-* Fill in the `perception_step()` function within the `perception.py` script with the appropriate image processing functions to create a map and update `Rover()` data (similar to what you did with `process_image()` in the notebook). 
+* Fill in the `perception_step()` function within the `perception.py` script with similar image-processing functions in `process_image()`.
+* Update Rover data with the output of `perception_step()` so that the data can be used to help the rover autonomously navigate the map.
 * Fill in the `decision_step()` function within the `decision.py` script with conditional statements that take into consideration the outputs of the `perception_step()` in deciding how to issue throttle, brake and steering commands. 
-* Iterate on your perception and decision function until your rover does a reasonable (need to define metric) job of navigating and mapping.  
+* Iterate on your perception and decision function until the rover can to the following:
+ * find and move toward navigable terrain,
+ * detect and avoid running into obstacles,
+ * follow the mountain walls to find new pathways,
+ * get out of situations in which it may become stuck,
+ * mark rocks as located when it comes across them,
+ * cover at least 40% of the map without getting stuck,
+ * achieve a minimum of 60% fidelity in the mapping.
+
+## [Rubric](https://review.udacity.com/#!/rubrics/916/view) Points
+### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.
+
 
 [//]: # (Image References)
 
