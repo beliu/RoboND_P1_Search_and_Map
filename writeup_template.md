@@ -2,10 +2,7 @@
 ---
 [//]: # (Image References)
 
-[image1]: ./misc/rover_image.jpg
-[image2]: ./calibration_images/example_grid1.jpg
-[image3]: ./calibration_images/example_rock1.jpg 
-
+[image1]: ./output/process_image_output.png
 
 ### The goals / steps of this project are the following:
 **Training / Calibration** 
@@ -34,7 +31,7 @@
 ## [Rubric](https://review.udacity.com/#!/rubrics/916/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.
 ### Notebook Analysis
-#### 1. I will cover how I filled in the functions that are present in the Notebook
+#### 1. I will cover how I filled in the key functions that are present in the Notebook
 **Color Threshold**
 
 Within `color_thresh()`, I added an extra parameter called `detect_mode` in line 3 of that cell. I use this parameter to choose whether I am interested in detecting obstacles, navigable terrain, or rocks. For example, if I wanted to detect obstacles, I would set `detect_mode = 'obstacle'`. 
@@ -57,29 +54,15 @@ Using the individual threshold images, I use `rover_coords()` to find the pixels
 
 If the pitch and roll angles are below a threshold of 1 degrees, then we can say the perspective transform is valid and we can update the worldmap with the output of the `pix_to_world()` function. For each layer, we take the respective coordinates and increment the pixel value at those coordinates. However, because the rover is constantly moving, certain areas that were previously identified as ground may become identified as an obstacle once the rover changes its field of vision. In this case, I don't want to make the obstacle pixel value too strong in a location that is also marked as ground. Therefore, I check if a location is classified as ground with high-confidence. By this, I mean this location has been classified as ground in many frames. Such an area will have a high pixel value in the ground layer. If the pixel value is over a threshold (I chose 80 for my script), then I set the pixel values for this area in the obstacle layer to 0, meaning that there should be no obstacles in this area. The lines in the script that do this are located 71 to 78 in this cell.
 
-The output image combines the various images described above. The normal image is in the upper left, the warped image is the upper right, the world mapping to ground truth is in the lower left, and the warped plus threshold image is in the lower right.
+The output image combines the various images described above. The normal image is in the upper left, the warped image is the upper right, the world mapping to ground truth is in the lower left, and the warped plus threshold image is in the lower right. The following is an example of an image output from `process_image()`:
 
+![Image Output of process_image()][image1]
 
----
-### Writeup / README
-
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  
-
-You're reading it!
-
-### Notebook Analysis
-#### 1. Run the functions provided in the notebook on test images (first with the test data provided, next on data you have recorded). Add/modify functions to allow for color selection of obstacles and rock samples.
-
-
-![alt text][image1]
-
-#### 1. Populate the `process_image()` function with the appropriate analysis steps to map pixels identifying navigable terrain, obstacles and rock samples into a worldmap.  Run `process_image()` on your test data using the `moviepy` functions provided to create video output of your result. 
-And another! 
-
-![alt text][image2]
 ### Autonomous Navigation and Mapping
 
-#### 1. Fill in the `perception_step()` (at the bottom of the `perception.py` script) and `decision_step()` (in `decision.py`) functions in the autonomous mapping scripts and an explanation is provided in the writeup of how and why these functions were modified as they were.
+#### 1. I will describe the `perception_step()` (at the bottom of the `perception.py` script) and `decision_step()` (in `decision.py`) functions in the autonomous mapping scripts.
+**perception_step**
+First, I updated the `color_thresh()` function 
 
 
 #### 2. Launching in autonomous mode your rover can navigate and map autonomously.  Explain your results and how you might improve them in your writeup.  
