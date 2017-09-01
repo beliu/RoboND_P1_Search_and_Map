@@ -62,7 +62,14 @@ The output image combines the various images described above. The normal image i
 
 #### 1. I will describe the `perception_step()` (at the bottom of the `perception.py` script) and `decision_step()` (in `decision.py`) functions in the autonomous mapping scripts.
 **perception_step**
-First, I updated the `color_thresh()` function 
+First, I updated the `color_thresh()` function in this script from lines 6 to 27. I added the extra parameter for detection that I explained previously in the Training portion. From there, I set fixed points in front of the rover's field-of-vision and fixed points in a top-down image to feed into the perspective transform (see line 93 to 104).
+Then, I apply `color_thresh()` three times, one for finding ground, one for obstacles, and one for rocks. For ground, I chose the threshold values `(160, 160, 160)` so that the pixel values need to be above these values to be considered ground. For obstacles, I chose the threshold values `(140, 140, 140)` so that the pixel vlaues need to be below these values. The treshold values for rocks are hard-coded into `color_thresh()` and the user does not need to supply them. After this, I create a 3-channel image where the obstacles are the red layer, the rocks are the green, and the ground are the blue. I then combine this color-threshold image with the warped image so that we can see which portions of the map are detected as obstacle, rock, or ground. All these steps are done in lines 106 to 115.
+
+Next, I find the coordinates of the pixels in the rover's coordinate frame using the function `rover_coords()`, which takes the threshold images as input. I convert these rover-centric coordinates to polar coordinates using the `to_polar_coordinates()` function, which returns an array of the distance to each coordinate from the rover center, and the angle from the x-axis to those coordinates. These two functions are run in lines 118 to 123. 
+
+I convert the rover-centric coordinates to the world coordinate frame using the function `pix_to_world()` and pass in the rover position and yaw from the rover's telemetry. After, I check to see if the rover's pitch and roll angles are below a threshold of 1 degrees. If so, then I update the worldmap with the output of `pix_to_world()`. Otherwise, I leave the worldmap unchanged for the current frame. These functions are run in lines 126 to 140.
+
+Finally, the polar coordinates calculated in line 123 are returned by `perception_step()`.
 
 
 #### 2. Launching in autonomous mode your rover can navigate and map autonomously.  Explain your results and how you might improve them in your writeup.  
