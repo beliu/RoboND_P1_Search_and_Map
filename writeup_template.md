@@ -3,6 +3,8 @@
 [//]: # (Image References)
 
 [image1]: ./output/process_image_output.png
+[image2]: ./output/rock_example.jpg
+[image3]: ./output/direction_to_move.png
 
 ### The goals / steps of this project are the following:
 **Training / Calibration** 
@@ -35,7 +37,9 @@
 **Color Threshold**
 
 Within `color_thresh()`, I added an extra parameter called `detect_mode` in line 3 of that cell. I use this parameter to choose whether I am interested in detecting obstacles, navigable terrain, or rocks. For example, if I wanted to detect obstacles, I would set `detect_mode = 'obstacle'`. 
-Lines 9 through 20 will choose one of three image channels to apply threshold values to based on `detect_mode`. For obstacles and terrain, the threshold values for each image channel is supplied by the user. For rocks, I plotted an interactive image of a rock in the notebook and found a range of values that the yellow rock can take on across all three channels. I then hard-coded those values as threshold values into `color_thresh()` for `detect_mode = 'rock'` only.
+Lines 9 through 20 will choose one of three image channels to apply threshold values to based on `detect_mode`. For obstacles and terrain, the threshold values for each image channel is supplied by the user. For rocks, I plotted an interactive image of a rock in the notebook and found a range of values that the yellow rock can take on across all three channels. For example, see below for a plot of a rock sample and its corresponding pixel values in the lower left corner:
+![Rock sample pixel values][image2]
+I then hard-coded those values as threshold values into `color_thresh()` for `detect_mode = 'rock'` only.
 Line 22 then takes the pixels that meeth the threshold values and sets them to 1 in the output threshold image.
 
 **Databucket Class**
@@ -59,9 +63,10 @@ The output image combines the various images described above. The normal image i
 ![Image Output of process_image()][image1]
 
 ### Autonomous Navigation and Mapping
-
+#### In the following section, I describe how to take Rover telemetry to guide the Rover to autonomously navigate the world map. The scripts below take Rover visual input and telemetry to udpate its internal state and allow it to make decisions on how to travel the map. The Rover's internal state itself is implemented as a Python Class that is updated by the functions I explain below.
 #### 1. I will describe the `perception_step()` (at the bottom of the `perception.py` script) and `decision_step()` (in `decision.py`) functions in the autonomous mapping scripts.
 **perception_step**
+
 First, I updated the `color_thresh()` function in this script from lines 6 to 27. I added the extra parameter for detection that I explained previously in the Training portion. From there, I set fixed points in front of the rover's field-of-vision and fixed points in a top-down image to feed into the perspective transform (see line 93 to 104).
 Then, I apply `color_thresh()` three times, one for finding ground, one for obstacles, and one for rocks. For ground, I chose the threshold values `(160, 160, 160)` so that the pixel values need to be above these values to be considered ground. For obstacles, I chose the threshold values `(140, 140, 140)` so that the pixel vlaues need to be below these values. The treshold values for rocks are hard-coded into `color_thresh()` and the user does not need to supply them. After this, I create a 3-channel image where the obstacles are the red layer, the rocks are the green, and the ground are the blue. I then combine this color-threshold image with the warped image so that we can see which portions of the map are detected as obstacle, rock, or ground. All these steps are done in lines 106 to 115.
 
@@ -71,15 +76,29 @@ I convert the rover-centric coordinates to the world coordinate frame using the 
 
 Finally, the polar coordinates calculated in line 123 are returned by `perception_step()`.
 
+**decision_step()**
+
+In the `decision_step()` function in the script `decision.py`, I took the output of `perception_step()` and I created four modes that the rover can enter. These modes are:
+* Forward
+* Stop
+* Stuck
+* Follow Left Wall
+The rover starts out in `forward` mode. In this mode, the rover is using its throttle to move forward and decides which direction to steer by calculating the average of the angles that are output from the `perception_step()`. The image below is an example of taking the rover's camera image and converting it to pixels in the rover's coordinate frame. The red arrow shows the average of the angles that result from converting the rover-centric pixels to polar coordinates.
+![Making a Steering Decision][image3]
+
+In order to smooth out the Rover's steering, I take a moving average of the steering angle the script calculates. I take the 5 most recent steering angles and average them. This average steering angle is applied to the Rover via `Rover.steer`.
+
+Of course, as the rover moves it will detect obstacles in its way. The script uses the number of polar coordinates output from `perception_step()` as a proxy for obstacle sensing. So, if there is an obstacle in a certain direction, then the number of polar coordinates in that direction will be low. Using this method, I detect for obstacles in front of the rover by first checking if the total number of coordinates is lower than a threshold. This is implemented by the code `(len(Rover.nav_angles) < Rover.stop_forward))`. Next, there might be cases where there are oepn spaces to both the left and right of the rover, but not directly in front of it. In these cases, the number of polar coordinates that are -5 to 5 degrees in front of the rover will be small. I implement this by the code `((len(Rover.nav_angles[np.abs(Rover.nav_angles * 180/np.pi) < 5]) < 20)`. If both these are not true, then the rover is clear to move forward. Otherwise, if either condition is true, then the rover enters stop mode.
+
+In stop mode, the script first brings the rover to a stop by applying the brakes and turning off the throttle. It then turns the rover -15 degrees (turns to the right) until it senses there are no obstacles ahead. Again, the proxy for obstacle detection is `len(Rover.nav_angles)`. However, I use a higher threshold for when the rover is in stop mode. In this case, the script checks that `(len(Rover.nav_angles) > Rover.go_forward)` and that `(len(Rover.nav_angles[np.abs(Rover.nav_angles * 180/np.pi) < 5]) > 20))`. Once the rover detects a way forward again, it enters `follow left wall` mode.
+
+In `follow left wall` mode, the rover tries to navigate parallel to a wall on its left. Normally, the rover will steer in the direction of the most open space. In order to get it to hug a wall, I calculate the number of pixels that are to the left of the rover by using `len(Rover.nav_angles[Rover.nav_angles > 0]`, scale it, and then add that as a bias term to the steering angle calculated by `np.mean(Rover.nav_angles * 180/np.pi)`. This way, if the rover gets too far from the wall, then the bias term gets larger and pushes the overall steering angle to be positive, which turns the rover to its left towards the wall. If the rover gets too close to the wall, then the bias term is small or even zero and the term `np.mean(Rover.nav_angles * 180/np.pi) + bias` is negative, turning the rover to its right away from the wall. Again, at any time during its movement, if the rover encounters an obstacle, it will go into stop mode and turn in place until it finds a new path forward.
+
+Lastly, I implemented `stuck` mode because I saw that sometimes the rover would run over small rocks and not move. For each frame, I check if the rover's throttle is on but its speed is close to zero or it there is a steering angle applied but the rover yaw is not changing. If this is the case, I first record the time that this occurred but otherwise change nothing. I wait for three seconds to lapse before I check for any movement again. If the rover still has not turned or moved, then it entrs `stuck` mode. In this mode, the rover simply backs up and turns in the direction of most open space. Once there is enough navigable terrain detected ahead, the rover enters `forward` mode.
 
 #### 2. Launching in autonomous mode your rover can navigate and map autonomously.  Explain your results and how you might improve them in your writeup.  
 
 **Note: running the simulator with different choices of resolution and graphics quality may produce different results, particularly on different machines!  Make a note of your simulator settings (resolution and graphics quality set on launch) and frames per second (FPS output to terminal by `drive_rover.py`) in your writeup when you submit the project so your reviewer can reproduce your results.**
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
-
-
-
-![alt text][image3]
 
 
